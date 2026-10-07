@@ -3,15 +3,29 @@ import webbrowser
 import pyttsx3
 import musicLibrary
 import requests
-
+from openai import OpenAI
 
 recognizer = sr.Recognizer()
 engine = pyttsx3.init()
-newsapi = "6fe2aa43c7fd404c9b580e1753808624"
+newsapi = "(use your own api here and remember to remove parenthesis)"
 
 def speak(text):
     engine.say(text)
     engine.runAndWait()
+
+def aiProcess(command):
+    client = OpenAI(api_key= "Can't share my API key. Use your own.")
+
+
+    completion = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    messages=[
+        {"role": "system", "content": "You are a virtual assistant named jarvis skilled in general tasks like Alexa and Google Cloud"},
+        {"role": "user", "content": command}
+    ]
+)
+
+    return completion.choice[0].message.content
 
 def processCommand(c):
     if "open google" in c.lower():
@@ -27,29 +41,19 @@ def processCommand(c):
         link = musicLibrary.music[song]
         webbrowser.open(link)
     elif "news" in c.lower():
-        r = requests.get( "https://newsapi.org/v2/top-headlines?country=us&apiKey=6fe2aa43c7fd404c9b580e1753808624" ) 
+        r = requests.get( "https://newsapi.org/v2/top-headlines?country=us&apiKey=(use your own api here and remember to remove parenthesis)" ) 
         if r.status_code == 200:
             data = r.json() 
-            articles = data.get("articles", []) 
-            if articles: 
-                print("Today's Top Headlines:") 
+            articles = data.get('articles', [])
 
-                for article in articles:
-                    headline = article.get("title") 
+            for article in articles:
+                speak(article['title'])
 
-                    if headline: 
-                        print(headline) 
-                        speak(headline) 
-            else:
-                print("No news articles found.")
-
-                    
-        else:
-            print("Failed to fetch news.") 
-            print("Status Code:", r.status_code)
-
-    
-    
+    else:
+        # Let OpenAI handle the request
+        output = aiProcess(c)
+        speak(output)
+            
 
 
 if __name__ == "__main__":
@@ -64,9 +68,8 @@ if __name__ == "__main__":
                 audio = r.listen(source, timeout=3, phrase_time_limit=2)
             word = r.recognize_google(audio)
             if(word.lower() == "jarvis"):
-                 speak("Ya")
-                 #Listen for commands
-                 with sr.Microphone() as source:
+                speak("Ya")
+                with sr.Microphone() as source:
                     print("Jarvis Active...")
                     audio = r.listen(source)
                     command = r.recognize_google(audio)
